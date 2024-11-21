@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import '../widgets/grocery_item_card.dart';
+import 'package:provider/provider.dart';
+import 'package:simple_lists/utils/theme_manager.dart'; // Updated import
+import 'package:simple_lists/widgets/grocery_item_card.dart'; // Updated import
 
 class ListScreen extends StatefulWidget {
   final String listName;
   final List<Map<String, dynamic>> items;
-  final Function(List<Map<String, dynamic>>) onSave;
+  final ValueChanged<List<Map<String, dynamic>>> onSave;
 
-  ListScreen({
+  const ListScreen({
     required this.listName,
     required this.items,
     required this.onSave,
@@ -19,87 +21,185 @@ class ListScreen extends StatefulWidget {
 class _ListScreenState extends State<ListScreen> {
   late List<Map<String, dynamic>> _items;
   final TextEditingController _textController = TextEditingController();
-  final FocusNode _textFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
-    _items = widget.items;
+    _items = List.from(widget.items);
   }
 
-  void _toggleItem(int index) {
-    setState(() {
-      _items[index]['isChecked'] = !_items[index]['isChecked'];
-      widget.onSave(_items);
-    });
-  }
-
-  void _addItem() {
-    if (_textController.text.isNotEmpty) {
-      setState(() {
-        _items.add({'name': _textController.text, 'isChecked': false});
-        widget.onSave(_items);
-        _textController.clear();
-        _textFocusNode.requestFocus();
-      });
-    }
-  }
-
-  void _removeItem(int index) {
-    setState(() {
-      _items.removeAt(index);
-      widget.onSave(_items);
-    });
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeManager = Provider.of<ThemeManager>(context);
+    final mediaQuery = MediaQuery.of(context);
+    final aspectRatio = mediaQuery.size.width / mediaQuery.size.height;
+    final isMainMenu = aspectRatio >= 1.0; // Corrected logic to detect main screen mode
+
+    final appBarColor = themeManager.themeMode == ThemeMode.dark
+        ? Colors.lightBlue
+        : Colors.green;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.listName),
-      ),
-      body: Column(
-        children: [
+        backgroundColor: appBarColor,
+        actions: [
           Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _textController,
-                    focusNode: _textFocusNode,
-                    decoration: InputDecoration(
-                      labelText: 'Add new item',
-                      border: OutlineInputBorder(),
+            padding: const EdgeInsets.only(right: 8.0),
+            child: TextButton(
+              onPressed: () {
+                _showAddItemDialog(context);
+              },
+              child: Text(
+                'Add Item',
+                style: TextStyle(
+                  color: Colors.white,
+                  letterSpacing: 1.0,
+                  shadows: [
+                    Shadow(
+                      offset: Offset(-1.0, -1.0),
+                      color: Colors.black,
                     ),
-                    onSubmitted: (value) {
-                      _addItem();
-                    },
-                  ),
+                    Shadow(
+                      offset: Offset(1.0, -1.0),
+                      color: Colors.black,
+                    ),
+                    Shadow(
+                      offset: Offset(1.0, 1.0),
+                      color: Colors.black,
+                    ),
+                    Shadow(
+                      offset: Offset(-1.0, 1.0),
+                      color: Colors.black,
+                    ),
+                  ],
                 ),
-                SizedBox(width: 8.0),
-                ElevatedButton(
-                  onPressed: _addItem,
-                  child: Text('Add'),
-                ),
-              ],
+              ),
             ),
           ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _items.length,
-              itemBuilder: (context, index) {
-                return GroceryItemCard(
-                  item: _items[index]['name'],
-                  isChecked: _items[index]['isChecked'],
-                  onToggle: () => _toggleItem(index),
-                  onDelete: () => _removeItem(index),
-                );
-              },
-            ),
+          Switch(
+            activeColor: Colors.white,
+            inactiveThumbColor: Colors.white,
+            inactiveTrackColor: Colors.white.withOpacity(0.3),
+            value: themeManager.themeMode == ThemeMode.dark,
+            onChanged: (value) {
+              themeManager.toggleTheme(value);
+            },
           ),
         ],
       ),
+      body: isMainMenu
+          ? GridView.builder(
+              padding: EdgeInsets.all(8.0),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 8.0,
+                mainAxisSpacing: 8.0,
+                childAspectRatio: 2.5, // Adjusted aspect ratio for better fit
+              ),
+              itemCount: _items.length,
+              itemBuilder: (context, index) {
+                final item = _items[index];
+                return GroceryItemCard(
+                  item: item['name'],
+                  isChecked: item['isChecked'],
+                  onToggle: () {
+                    setState(() {
+                      _items[index]['isChecked'] = !_items[index]['isChecked'];
+                    });
+                    widget.onSave(_items);
+                  },
+                  onDelete: () {
+                    setState(() {
+                      _items.removeAt(index);
+                    });
+                    widget.onSave(_items);
+                  },
+                );
+              },
+            )
+          : ListView.builder(
+              itemCount: _items.length,
+              itemBuilder: (context, index) {
+                final item = _items[index];
+                return GroceryItemCard(
+                  item: item['name'],
+                  isChecked: item['isChecked'],
+                  onToggle: () {
+                    setState(() {
+                      _items[index]['isChecked'] = !_items[index]['isChecked'];
+                    });
+                    widget.onSave(_items);
+                  },
+                  onDelete: () {
+                    setState(() {
+                      _items.removeAt(index);
+                    });
+                    widget.onSave(_items);
+                  },
+                );
+              },
+            ),
     );
+  }
+
+  void _showAddItemDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Add New Item'),
+          content: TextField(
+            controller: _textController,
+            autofocus: true,
+            decoration: InputDecoration(hintText: 'Enter item name'),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (value) {
+              if (value.isNotEmpty) {
+                _addItem(value);
+                _textController.clear();
+                _refocusTextField();
+              }
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (_textController.text.isNotEmpty) {
+                  _addItem(_textController.text);
+                  _textController.clear();
+                  _refocusTextField();
+                }
+              },
+              child: Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _addItem(String itemName) {
+    setState(() {
+      _items.add({'name': itemName, 'isChecked': false});
+    });
+    widget.onSave(_items);
+  }
+
+  void _refocusTextField() {
+    Navigator.of(context).pop();
+    Future.delayed(Duration.zero, () {
+      _showAddItemDialog(context);
+    });
   }
 }

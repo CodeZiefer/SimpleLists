@@ -5,11 +5,16 @@ import 'package:simple_lists/utils/list_manager.dart'; // Updated import
 import 'package:simple_lists/screens/list_screen.dart'; // Updated import
 import 'package:simple_lists/widgets/list_card.dart'; // Updated import
 
-class MainMenuScreen extends StatelessWidget {
+class CoverScreen extends StatefulWidget {
+  @override
+  _CoverScreenState createState() => _CoverScreenState();
+}
+
+class _CoverScreenState extends State<CoverScreen> {
   @override
   Widget build(BuildContext context) {
-    final listManager = Provider.of<ListManager>(context);
     final themeManager = Provider.of<ThemeManager>(context);
+    final listManager = Provider.of<ListManager>(context);
 
     final appBarColor = themeManager.themeMode == ThemeMode.dark
         ? Colors.lightBlue
@@ -20,38 +25,11 @@ class MainMenuScreen extends StatelessWidget {
         title: Text('Main Menu'),
         backgroundColor: appBarColor,
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: TextButton(
-              onPressed: () {
-                _showAddListDialog(context, listManager);
-              },
-              child: Text(
-                'Add List',
-                style: TextStyle(
-                  color: Colors.white,
-                  letterSpacing: 1.0,
-                  shadows: [
-                    Shadow(
-                      offset: Offset(-1.0, -1.0),
-                      color: Colors.black,
-                    ),
-                    Shadow(
-                      offset: Offset(1.0, -1.0),
-                      color: Colors.black,
-                    ),
-                    Shadow(
-                      offset: Offset(1.0, 1.0),
-                      color: Colors.black,
-                    ),
-                    Shadow(
-                      offset: Offset(-1.0, 1.0),
-                      color: Colors.black,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          TextButton(
+            onPressed: () {
+              _showAddListDialog(context, listManager);
+            },
+            child: Text('Add List', style: TextStyle(color: Colors.white)),
           ),
           Switch(
             activeColor: Colors.white,

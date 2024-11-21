@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import './utils/theme_manager.dart';
-import 'screens/main_menu_screen.dart';
+import 'package:simple_lists/screens/cover_screen.dart';
+import 'package:simple_lists/screens/main_menu_screen.dart';
+import 'package:simple_lists/utils/list_manager.dart';
+import 'package:simple_lists/utils/theme_manager.dart';
+import 'package:simple_lists/widgets/foldable_aware.dart';
 
 void main() {
   runApp(MyApp());
@@ -10,8 +13,11 @@ void main() {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ThemeManager(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeManager()),
+        ChangeNotifierProvider(create: (_) => ListManager()),
+      ],
       child: Consumer<ThemeManager>(
         builder: (context, themeManager, child) {
           return MaterialApp(
@@ -19,7 +25,10 @@ class MyApp extends StatelessWidget {
             themeMode: themeManager.themeMode,
             theme: ThemeData.light(),
             darkTheme: ThemeData.dark(),
-            home: MainMenuScreen(),
+            home: FoldableAware(
+              unfoldedScreen: MainMenuScreen(),
+              foldedScreen: CoverScreen(),
+            ),
           );
         },
       ),
